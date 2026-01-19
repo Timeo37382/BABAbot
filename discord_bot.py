@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands
 from discord.ui import Button, View
-from flask import Flask
-import threading
 import os
 from datetime import datetime
 
@@ -17,18 +15,6 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 SALON_DEMANDES = 1234567890  # salon des nouvelles demandes
 SALON_EN_COURS = 1234567891  # salon des demandes acceptées
 SALON_TERMINEES = 1234567892 # salon des demandes terminées
-
-# ==============================
-# Serveur Flask pour UptimeRobot
-# ==============================
-app = Flask("")
-
-@app.route("/")
-def home():
-    return "Bot BABAbot actif !"
-
-def run_flask():
-    app.run(host="0.0.0.0", port=8080)
 
 # ==============================
 # Classes Boutons
@@ -101,6 +87,12 @@ class BoutonTerminer(View):
 async def on_ready():
     print(f'✅ Bot connecté en tant que {bot.user}')
     print(f'🔗 Connecté à {len(bot.guilds)} serveur(s)')
+    
+    # Message de confirmation dans le salon des nouvelles demandes
+    salon_demandes = bot.get_channel(SALON_DEMANDES)
+    if salon_demandes:
+        await salon_demandes.send("✅ **BABAbot est connecté et prêt !**")
+
     try:
         synced = await bot.tree.sync()
         print(f'✅ {len(synced)} commande(s) synchronisée(s)')
@@ -129,7 +121,7 @@ async def on_message(message):
         view = BoutonAccepterRefuser(embed_data)
         await message.reply("**🔔 Nouvelle demande détectée !**\nQue voulez-vous faire ?", view=view)
 
-    # ✅ Correction ici
+    # Traitement des commandes
     await bot.process_commands(message)
 
 # ==============================
@@ -163,12 +155,9 @@ async def config(interaction: discord.Interaction):
     )
 
 # ==============================
-# Lancer le bot + Flask
+# Lancer le bot
 # ==============================
 if __name__ == "__main__":
-    # Lancer Flask dans un thread pour UptimeRobot
-    threading.Thread(target=run_flask).start()
-
     TOKEN = os.getenv('DISCORD_TOKEN')
     if not TOKEN:
         print("❌ ERREUR: Token Discord non trouvé! Définissez la variable DISCORD_TOKEN")
